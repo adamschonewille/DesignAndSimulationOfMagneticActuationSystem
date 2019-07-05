@@ -7,6 +7,8 @@
 %  Last Editted: July 5th 2019
 %
 
+clear all; close all; clc; % ensure there are no variables or open plots
+
 %% ~~~~~~~~~~ ~~~~~~~~~~ GLOBAL CONSTANTS ~~~~~~~~~~ ~~~~~~~~~~ %%
 % Essential:
 mu_0 = pi*4e-7;         % [H/m or N/A^2 (amp-turns)]
