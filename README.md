@@ -3,4 +3,4 @@ This repository serves as the updated code for the simulations I am currently pe
 
 All simulations are done in MATLAB.
 
-Main simulation file is ~DesignAndOptimizationOfNewSystem.m~
+Main simulation file is `DesignAndOptimizationOfNewSystem.m`
