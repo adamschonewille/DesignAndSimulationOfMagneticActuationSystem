@@ -1,0 +1,31 @@
+%% Simulations for designing the next novel actuation system.
+%
+%  Author: Adam Schonewille
+%  MASc Student, University of Toronto
+%
+%  Start Date: July 5th 2019
+%  Last Editted: July 5th 2019
+%
+
+%% ~~~~~~~~~~ ~~~~~~~~~~ GLOBAL CONSTANTS ~~~~~~~~~~ ~~~~~~~~~~ %%
+mu_0 = pi*4e-7;
+% For Head Dimensions take the 99th Percentile as max
+% https://en.wikipedia.org/wiki/Human_head
+max_Head_Width = 0.165; % [m] Ear to Ear
+max_Head_Length = 0.217;% [m] Forehead to Back of Head
+
+%% ~~~~~~~~~~ ~~~~~~~~~~ OPERATING PARAMETERS ~~~~~~~~~~ ~~~~~~~~~~ %%
+magnetSize = 0.0254; % [m]
+Remenance = 1.45; % [T]
+
+%% ~~~~~~~~~~ ~~~~~~~~~~ SIMULATION TARGETS ~~~~~~~~~~ ~~~~~~~~~~ %%
+isotropicFields = true;
+MaxB_Field = 0.040; %[T]
+
+
+% for plotting
+figureNum = 1;
+
+
+
+
