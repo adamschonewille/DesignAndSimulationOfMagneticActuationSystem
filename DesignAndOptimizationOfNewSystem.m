@@ -4,7 +4,7 @@
 %  MASc Student, University of Toronto
 %
 %  Start Date: July 5th 2019
-%  Last Editted: July 23th 2019
+%  Last Editted: Nov 3rd 2019
 %
 
 clear all; close all; clc; % ensure there are no variables or open plots
@@ -27,7 +27,7 @@ rel_Temp = 293;         % [K] Standard temperature
 % mu_rel_Cu = 0.999994;   % [ ] 
 alpha_Cu = 0.00404;     % [1/K] Temperature coefficient
 k_Cu = 401;             % [W/(m*K)] Thermal conductivity @ 293 K
-rho_Cu = 1.68e-8;       % [Ohm*m] Resisticity @ 293 K
+rho_Cu = 1.68e-8;       % [Ohm*m] Resistivity @ 293 K
 N2_temp = 77;           % [K] (Liquid Nitrogen)
 
 % For Surgical applications:
@@ -58,6 +58,9 @@ if (choice == 1)
     calcPowerMassRatios(figureNum);   
 end % Any other option just skips/does nothing
 figureNum = figureNum +1;
+
+return;
+
 
 %% ~~~~~~~~~~ ~~~~~~~~~~ ANSYS RESULTS ANALYSIS SIMULATION ~~~~~~~~~~ ~~~~~~~~~~ %% 
 figure(figureNum)
@@ -153,7 +156,7 @@ for i = 1:numPoints
     end
     disp("Point " + i + " done.");
     % Check that the 3 points surround the point of interest
-    % https://www.geeksforgeeks.org/check-whether-a-given-point-lies-inside-a-triangle-or-not/
+    % https://www.geeksforgeeks.orgcheck-whether-a-given-point-lies-inside-a-triangle-or-not/
     if (nearest_Points(i,12) >= nearest_Points(i,9)) && (nearest_Points(i,12) >= nearest_Points(i,6)) && (nearest_Points(i,12) >= nearest_Points(i,3))
         % 4th point is furthest away
         % A = [x1(y2 – y3) + x2(y3 – y1) + x3(y1-y2)]/2
@@ -190,7 +193,7 @@ for i = 1:numPoints
     end
 end
 
-% EXTRACTION OF AXIAL MAGNETIC FIElD VALUES
+% EXTRACTION OF AXIAL MAGNETIC FIELD VALUES
 X = [];
 Y = [];
 MagneticField_y_Dir = [];

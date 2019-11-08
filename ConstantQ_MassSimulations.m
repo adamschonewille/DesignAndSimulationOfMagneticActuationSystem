@@ -24,6 +24,7 @@
 % no meaningful inductance values were produced or recorded.
 
 clear all; clc; close all;
+
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
 set(groot, 'defaultLegendInterpreter','latex');
 set(0,'defaulttextInterpreter','latex');
@@ -54,11 +55,12 @@ uiwait(msgbox('Select the file containing experimental data for: B-Field','Const
 B_mag = uiimport();
 B_mag = struct2array(B_mag);
 
-% return;
-%% Analysis and Plotting
-numPoints = size(X,2);
-L = 0;  % starting length of the electromagnet from the origin
 
+%% Analysis and Plotting
+numExperiments = size(X,2);
+numPoints = size(X,1);
+L = 0;  % starting length of the electromagnet from the origin
+% arbitrary rainbow colours:
 colors = 1/255*[235,  64,  52;
                 235, 131,  52;
                 235, 232,  52;
@@ -73,7 +75,8 @@ colors = 1/255*[235,  64,  52;
 
 figure(figureNum)
 hold on
-for i = 1:numPoints
+% Sort points to be ordered and then plot
+for i = 1:numExperiments
     % Sort points to be ascending in Y
     [Y(:,i),indices] = sort( Y(:,i) );
     B_temp = B_mag(:,i);
@@ -92,46 +95,156 @@ legend('R=10mm','R=15mm','R=20mm','R=25mm','R=30mm','R=35mm','R=40mm','R=45mm','
 hold off
 figureNum = figureNum + 1;
 
-return;
+
+%% Average Values in the plot for same points
+
+figure(figureNum)
+hold on
+Y_avg = [];
+B_mag_avg = [];
+% Take sorted values and average the values that are on the same point
+prev_Val = NaN;
+initialize_flag = 1; 
+
+% cycle through columns where each column is an experiment
+for n = 1:numExperiments
+    index = 1;
+    % For each experiment cycle through the datapoints
+    for i = 1:numPoints
+        
+        count = 0;
+        B_acc = 0;
+        % If the data point is the same as the previous or it is NaN 
+        % then skip it         
+        if ( ( Y(i,n) ~= prev_Val ) && (isnan(Y(i,n)) == 0) )
+            % look ahead through the data and check to see if a value
+            % repeats. Accumulate these values.
+            for j = i:numPoints
+                if ( abs( Y(j,n) - Y(i,n) ) <= 1e-6 )
+                    B_acc = B_acc + B_mag(j,n);
+                    count = count + 1;
+                end
+            end
+            % Combine identical points to be one point with an average
+            % value
+            Y_avg(index,n) = Y(i,n);
+            B_mag_avg(index,n) = B_acc/count;
+            index = index + 1;
+            % Set prevVal as this number to skip it in the future. The data
+            % is ordered in ascending order so this should suffice
+            prev_Val = Y(i,n);
+        end
+    end
+    plot(Y_avg(:,n)-L, B_mag_avg(:,n),'-o','MarkerSize',2.5,'LineWidth',1.5,'Color',colors(n,:));
+    if (initialize_flag)
+        % set only once, ensures that the matrix ends in NaN for blank
+        % results and not in zeros that will be plotted.
+        Y_avg = [Y_avg NaN*ones(length(Y_avg),numExperiments-1)];
+        B_mag_avg = [B_mag_avg NaN*ones(length(B_mag_avg),numExperiments-1)];
+        initialize_flag = 0;
+    end
+end
+title("Averaged Magnetic Field vs Axial Distance [m] for a constant current density of 3 A/mm$^2$");
+xlabel("Distance along Y [m]");
+ylabel("Average By Magnetic Field Component [T]");
+% ylim([0 0.15])
+legend show
+legend('R=10mm','R=15mm','R=20mm','R=25mm','R=30mm','R=35mm','R=40mm','R=45mm','R=50mm','R=55mm','R=60mm')
+hold off
+figureNum = figureNum + 1;
+
 
 %% Next set
-clear X;
-clear Y;
-clear B_mag;
 
 uiwait(msgbox('Select the file containing experimental data for: X','Constant Power','modal'));
-X = uiimport();
-X = struct2array(X);
+X_P = uiimport();
+X_P = struct2array(X_P);
 
 
 uiwait(msgbox('Select the file containing experimental data for: Y','Constant Power','modal'));
-Y = uiimport();
-Y = struct2array(Y);
+Y_P = uiimport();
+Y_P = struct2array(Y_P);
 
 
 uiwait(msgbox('Select the file containing experimental data for: B-Field','Constant Power','modal'));
-B_mag = uiimport();
-B_mag = struct2array(B_mag);
+B_mag_P = uiimport();
+B_mag_P = struct2array(B_mag_P);
 
 
-numPoints = size(X,2);
+numExperiments_P = size(X_P,2);
+numPoints_P = size(X_P,1);
 L = 0;  % starting length of the electromagnet from the origin
 
 figure(figureNum)
 hold on
-for i = 1:numPoints
+for i = 1:numExperiments_P
     % Sort points to be ascending in Y
-    [Y(:,i),indices] = sort( Y(:,i) );
-    B_temp = B_mag(:,i);
-    for j = 1 : size(B_mag,1)
-        B_mag(j,i) = B_temp(indices(j));
+    [Y_P(:,i),indices] = sort( Y_P(:,i) );
+    B_temp = B_mag_P(:,i);
+    for j = 1 : size(B_mag_P,1)
+        B_mag_P(j,i) = B_temp(indices(j));
     end
-    plot(Y(:,i)-L, B_mag(:,i),'-o','MarkerSize',2.5,'LineWidth',1.5 );
+    plot(Y_P(:,i)-L, B_mag_P(:,i),'-o','MarkerSize',2.5,'LineWidth',1.5 );
     legend
 end
 title("Magnetic Field vs Axial Distance [m] For a constant power of 1.8 kW");
 xlabel("Distance along Y [m]");
 ylabel("By Magnetic Field Component [T]");
+% ylim([0 0.15])
+legend show
+legend('R=10mm','R=15mm','R=20mm','R=25mm','R=30mm','R=35mm','R=40mm','R=45mm','R=50mm','R=55mm','R=60mm')
+hold off
+figureNum = figureNum + 1;
+
+%% Average the Power results
+Y_P_avg = [];
+B_mag_P_avg = [];
+% Take sorted values and average the values that are on the same point
+prev_Val = NaN;
+initialize_flag = 1; 
+
+figure(figureNum)
+hold on
+% cycle through columns where each column is an experiment
+for n = 1:numExperiments_P
+    index = 1;
+    % For each experiment cycle through the datapoints
+    for i = 1:numPoints_P
+        
+        count = 0;
+        B_acc = 0;
+        % If the data point is the same as the previous or it is NaN 
+        % then skip it         
+        if ( ( Y_P(i,n) ~= prev_Val ) && (isnan(Y_P(i,n)) == 0) )
+            % look ahead through the data and check to see if a value
+            % repeats. Accumulate these values.
+            for j = i:numPoints
+                if ( abs( Y_P(j,n) - Y_P(i,n) ) <= 1e-6 )
+                    B_acc = B_acc + B_mag_P(j,n);
+                    count = count + 1;
+                end
+            end
+            % Combine identical points to be one point with an average
+            % value
+            Y_P_avg(index,n) = Y_P(i,n);
+            B_mag_P_avg(index,n) = B_acc/count;
+            index = index + 1;
+            % Set prevVal as this number to skip it in the future. The data
+            % is ordered in ascending order so this should suffice
+            prev_Val = Y_P(i,n);
+        end
+    end
+    plot(Y_avg(:,n)-L, B_mag_P_avg(:,n),'-o','MarkerSize',2.5,'LineWidth',1.5,'Color',colors(n,:));
+    if (initialize_flag)
+        % set only once
+        Y_P_avg = [Y_P_avg NaN*ones(length(Y_P_avg),numExperiments_P-1)];
+        B_mag_P_avg = [B_mag_P_avg NaN*ones(length(B_mag_P_avg),numExperiments_P-1)];
+        initialize_flag = 0;
+    end
+end
+title("Averaged Magnetic Field vs Axial Distance [m] for a constant Power of 1.8kW");
+xlabel("Distance along Y [m]");
+ylabel("Average By Magnetic Field Component [T]");
 % ylim([0 0.15])
 legend show
 legend('R=10mm','R=15mm','R=20mm','R=25mm','R=30mm','R=35mm','R=40mm','R=45mm','R=50mm','R=55mm','R=60mm')
