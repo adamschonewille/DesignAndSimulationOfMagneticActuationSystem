@@ -1,10 +1,10 @@
 function [wireDiam resistanceLength] = gaugeLookup( gauge )
 % Author: Adam Schonewille
 % Date: September 21 2018
-
+%
 %% Description of Inputs
 % gauge  - The wire gauge that is being designed for
-
+%
 %% Returned Values
 % wireDiam         - The wire diameter corresponding to the gauge in mm
 % resistanceLength - The resistance in mOhm/m of the wire gauge

@@ -42,7 +42,7 @@ m_actuator = actuator_mag * [1  0  0]'; %[Am^2]
 p_wrist    = 1/1000 * [ 10  0  0]'; %[m]
 p_finger1  = 1/1000 * [ 22  3  0]'; %[m]
 p_finger2  = 1/1000 * [ 22 -3  0]'; %[m]
-p_actuator = 1/1000 * [300  0  0]'; %[m]
+p_actuator = 1/1000 * [150  0  0]'; %[m]
 LeverArm_fingers = 10/1000; %[m]
 %% Forces and Torques
 % All forces and torques are acting on the body they describe from the 
