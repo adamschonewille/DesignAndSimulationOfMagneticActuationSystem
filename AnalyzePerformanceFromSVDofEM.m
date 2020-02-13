@@ -5,7 +5,7 @@
 %  MASc Student, University of Toronto
 %
 %  Start Date: Feb 6th 2020
-%  Last Editted: Feb 6th 2020
+%  Last Editted: Feb 11th 2020
 %
 
 clear all; close all; clc; % ensure there are no variables or open plots
@@ -63,18 +63,18 @@ D0 = [DB, zeros(3,5); zeros(5,3), DG];
 figureNum = 1;
 
 %% ~~~~~~~~~~ ~~~~~~~~~~ SIMULATION INPUTS ~~~~~~~~~~ ~~~~~~~~~~ %%
-mAct = [m_EM_large m_EM_large m_EM_large m_EM_large m_EM_small m_EM_small m_EM_small m_EM_small];
+mAct = [m_EM_large m_EM_large m_EM_large m_EM_large 0 0 0 0];
 r_l = d_EM_large/2;
 r_s = d_EM_small/2;
-alpha = asin(sqrt(2)*r_s*sin(pi/4)/(r_l+r_s));
+alpha = asin(sqrt(2)*r_l*sin(pi/4)/(r_l+r_s));
 beta = pi-pi/4-alpha;
 x_sqr = (r_l+r_s)*sin(beta)/sin(pi/4);
 s = x_sqr/sqrt(2);
-mAct_sph = [  pi/4 3*pi/4 5*pi/4 7*pi/4 0  0  0  0;    %Azimuth [rad]
-             -pi/6  -pi/6  -pi/6  -pi/6 0  0  0  0];    %Inclination [rad]
-pAct_cartesion = [    s     -s     -s      s  sqrt(2)*r_s         0     -sqrt(2)*r_s          0    ;    % X Position
-                      s      s     -s     -s         0     sqrt(2)*r_s          0     -sqrt(2)*r_s ;	% Y Position
-                   -0.12-r_l*sin(pi/6)  -0.12-r_l*sin(pi/6)  -0.12-r_l*sin(pi/6)  -0.12-r_l*sin(pi/6)     -0.12        -0.12         -0.12         -0.12 ];% Z Position
+mAct_sph = [  0     pi/2  pi   3*pi/2 0  0  0  0;    %Azimuth [rad]
+             -pi/6 -pi/6 -pi/6 -pi/6  0  0  0  0];    %Inclination [rad]
+pAct_cartesion = [ sqrt(2)*r_l        0    -sqrt(2)*r_l          0     s    -s    -s     s  ;  % X Position
+                          0    sqrt(2)*r_l         0     -sqrt(2)*r_l  s     s    -s    -s  ;	% Y Position
+                       -0.15       -0.15        -0.15         -0.15  -0.12 -0.12 -0.12 -0.12 ];% Z Position
 
 %% ~~~~~~~~~~ SIMULATION: EVALUATE SINGULAR VALUES ~~~~~~~~~~ %%              
 nAct = size(pAct_cartesion,2);
@@ -181,5 +181,27 @@ for j=1:size(pTool,2)
     disp(printout);
 end
 
+I_Bx = inv(K(:,:,1))*[1 0 0 0 0 0 0 0]';
+I_By = inv(K(:,:,1))*[0 1 0 0 0 0 0 0]';
+I_Bz = inv(K(:,:,1))*[0 0 1 0 0 0 0 0]';
+maxUniformBx = 1/max(abs(I_Bx))
+maxUniformBy = 1/max(abs(I_By))
+maxUniformBz = 1/max(abs(I_Bz))
+
+pseudoK = K(1:3,:,1)' * inv( K(1:3,:,1)*K(1:3,:,1)' );
+I_Bx_grad =  pseudoK * [1 0 0]';
+I_By_grad =  pseudoK * [0 1 0]';
+I_Bz_grad =  pseudoK * [0 0 1]';
+maxGradientBx = 1/max(abs(I_Bx_grad))
+maxGradientBy = 1/max(abs(I_By_grad))
+maxGradientBz = 1/max(abs(I_Bz_grad))
+
+Bx_grads = K(:,:,1)*I_Bx_grad./max(abs(I_Bx_grad))
+By_grads = K(:,:,1)*I_By_grad./max(abs(I_By_grad))
+Bz_grads = K(:,:,1)*I_Bz_grad./max(abs(I_Bz_grad))
+
+
+
 plotEM(r, large_EM, small_EM, rad2deg(mAct_sph), pAct_cartesion, sum(singularValues), figureNum);
 figureNum = figureNum + 1;
+

@@ -1,11 +1,10 @@
-%% Evaluate different EM configurations for best performance using 
-%               Singular Value Decomposition (SVD)
+%% Single dipole vs Multiple dipoles to Approximate EM Fields
 %
 %  Author: Adam Schonewille
 %  MASc Student, University of Toronto
 %
-%  Start Date: Feb 6th 2020
-%  Last Editted: Feb 6th 2020
+%  Start Date: Feb 11th 2020
+%  Last Editted: Feb 11th 2020
 %
 
 clear all; close all; clc; % ensure there are no variables or open plots
@@ -18,63 +17,170 @@ set(0,'defaulttextInterpreter','latex');
 % Essential:
 mu_0 = pi*4e-7;         % [H/m or N/A^2 (amp-turns)]
 
-% For Surgical applications:
-% Head Dimensions taken from the 99th Percentile as an upper limit (max)
-% https://en.wikipedia.org/wiki/Human_head
-max_Head_Width  = 0.165; % [m] Ear to Ear
-max_Head_Length = 0.217; % [m] Forehead (brows) to Back of Head
-max_Head_Height = 0.255; % [m] Bottom of Chin to Top of Head
-% Because actuators are from the bottom of the patient (in the supine
-% postion) we will use the patient head length
+% Distance used in ANSYS simulations
 r = 0.12; % [m] Distance from posterior of head to the center of the brain
 
 %% ~~~~~~~~~~ ~~~~~~~~~~ OPERATING PARAMETERS ~~~~~~~~~~ ~~~~~~~~~~ %%
-% Approximate the EM as a dipole source at its face
+% Approximate the EM as a single dipole source at its face
+B_target_l = 0.11407; % [T] for J = 24 A/mm^2. At J = 6 A/mm^2 -> 63.8 mT
+B_target_s = 0.04846; % [T] for J = 24 A/mm^2. At J = 6 A/mm^2 -> 18.9 mT
 m_EM_large = 2*pi*(0.12)^3*(0.11407)/mu_0; % [A m^2] (for 24 A/mm^2) at 6 A/mm^2 -> 63.8 mT
 m_EM_small = 2*pi*(0.12)^3*(0.04846)/mu_0; % [A m^2] (for 24 A/mm^2) at 6 A/mm^2 -> 18.9 mT
+
 d_EM_large = 2*(45 + 22.5) / 1000;  % [m]
 d_EM_small = 2*(30 + 15) / 1000;    % [m]
+r_l = d_EM_large/2;
+r_s = d_EM_small/2;
 l_EM_large = 360 / 1000;            % [m]
 l_EM_small = 240 / 1000;            % [m]
 % Accumulate EM data
 large_EM = [m_EM_large, d_EM_large, l_EM_large]';
 small_EM = [m_EM_small, d_EM_small, l_EM_small]';
 
-% Tethered Tool Parameters
-pTool = [0 0 0]'; %tool position [m]
-mTool_dir = [0 0 -1]'; %tool orientation
-mTool_mag = 8.4e-3; %tool dipole moment magnetiude [Am^2] = [Nm/T]
-mTool = mTool_dir/norm(mTool_dir)*mTool_mag; %tool dipole moment [Am^2]
-
-%% ~~~~~~~~~~ ~~~~~~~~~~ SIMULATION TARGETS ~~~~~~~~~~ ~~~~~~~~~~ %%
-targetMaxB_Field = 0.100; %[T] or higher
-targetMaxForce   = 0.100; %[N] or higher
-targetMaxField_G = targetMaxForce/mTool_mag; % [T/m]
-% Create normalization matrix D0. This matrix with map unity inputs to unity
-% desired outputs. Outputs greater than unity mean that fields greater than
-% desired are possible. Inputs greater than unity higher currents are
-% needed to produce a given desired output. Singular values less than unity
-% should correspond to saturated input actuators.
-DB = 1/targetMaxB_Field*eye(3);
-DG = 1/targetMaxField_G*eye(5);
-D0 = [DB, zeros(3,5); zeros(5,3), DG];
-
 % for plotting
 figureNum = 1;
 
 %% ~~~~~~~~~~ ~~~~~~~~~~ SIMULATION INPUTS ~~~~~~~~~~ ~~~~~~~~~~ %%
-mAct = [m_EM_large m_EM_large m_EM_large m_EM_large m_EM_small m_EM_small m_EM_small m_EM_small];
+nAzimuthal = 4:4:120;
+nAxial = 4:2:62;
+nRadial = 2:1:31;
+nDipoles = nAzimuthal.*nRadial.*nAxial;
+nSimulations = length(nDipoles);
+m = zeros(size(nDipoles));
+
+%% Large EM Simulation
+dx = 0.001;
+x = dx:dx:0.2; % Points to evaluate field at
+% Create a 3 x 1 x m x n matrix 
+% Where:  3 x 1 is the Bx, By, Bz at each mth point for the nth simulation
+B = zeros(3,1,length(x),nSimulations);
+
+val_index = 0;
+tol = 1e-9;
+for i=1:length(x)
+    if ( abs(x(i)-r) < tol )
+        % Found index with critical value in it
+        val_index = i;
+    end
+    if ( (i == length(x)) && (val_index == 0) )
+        % Could not find value
+        disp('Error: the vector "x" does not contain the critical search position');
+        return;
+    end
+end
+
+% Find the magnetic moment value such that all dipoles have the same m 
+% and the field strength at 'r' matches the ANSYS Simulations
+for n = 1:nSimulations
+    % Initialize the positions of the dipoles at the start of each
+    % simulation
+    pDipoles = zeros(3,nDipoles(n));    
+    % Find slice locations for the dipoles to be located at along the EM
+    % axis
+    slicesL = linspace(0,-l_EM_large,nAxial(n));
+    slicesR = linspace(0,r_l,nRadial(n));
+    dphi = 2*pi / nAzimuthal(n);
+    index = 1;
+    % Discretize dipole positions and save into vector:
+    for i = 1:nAxial(n)
+%         % initialize first point in center
+%         pDipoles(:,index) = [slicesL(i) 0 0]';
+%         index = index + 1;
+        for j = 1:nAzimuthal(n)
+            for k = 1:nRadial(n)
+                pDipoles(:,index) = [slicesL(i) slicesR(k)*sin(j*dphi) slicesR(k)*cos(j*dphi)]';
+                index = index + 1;
+            end
+        end    
+    end
+    % All positions should now be encoded/calculated and stored in pDipoles
+    % For all dipoles we should calculate the B-field at r with |m| = 1
+    % Assume all small dipoles, dm, have the same magnetic moment, m, and
+    % that they are all parallel and in the axial direction of the EM
+    mdir = [1 0 0]';
+    pTool = [r 0 0]';
+    % B_norm is the normalized B field from the dipole contributions with
+    % |m| = 0
+    B_norm = [0 0 0]';
+    for i = 1:size(pDipoles,2)
+        B_norm = B_norm + dipoleField([x(val_index) 0 0]'-pDipoles(:,i), mdir);
+    end
+    % find magnetic moment of this simulation:
+    % Currently |m| = 1  --> B_norm
+    % so B_norm * m = B_target
+    m(n) = B_target_l/B_norm(1);
+    % print out B_norm, the y and z values should be 0
+    B_norm
+    % While we already have the m and pDipoles calculated, we should
+    % calculate the fields at some points along the axis:
+    for j = 1:length(x)
+        % at each j points calculate through all dipoles
+        for i = 1:size(pDipoles,2)
+            % zeros(3,1,length(x),nSimulations);
+            B(:,:,j,n) = B(:,:,j,n) + dipoleField([x(j) 0 0]'-pDipoles(:,i), m(n)*mdir);
+        end
+    end
+    printout = sprintf('Simulation %d complete',n);
+    disp(printout);
+end
+
+%% Time to plot yo
+% Plot yo numbas
+
+figure(1)
+hold on
+for i=1:nSimulations
+    Bx = zeros(size(x));
+    for j = 1:length(x)
+        Bx(j) = B(1,1,j,i);
+    end
+    plot(x,Bx,'Color', [1 1-nDipoles(i)/nDipoles(end) 0])
+end
+legend('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15',...
+        '16','17','18','19','20','21','22','23','24','25','26','27','28',...
+        '29','30','NorthWest')
+title('On-Axis Magnetic field for different numbers of dipoles in an EM')
+xlabel('x [m]')
+ylabel('Bx [T]')
+hold off
+% Plot difference between simulations
+return;
+figure(2)
+hold on
+for i=2:nSimulations
+    Bx = zeros(size(x));
+    for j = 1:length(x)
+        Bx(j) = B(1,1,j,i);
+    end
+    Bx_prev = zeros(size(x));
+    for j = 1:length(x)
+        Bx_prev(j) = B(1,1,j,i-1);
+    end
+    plot(x,Bx,'Color', [1 1-nDipoles(i)/nDipoles(end) 0])
+end
+legend('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15',...
+        '16','17','18','19','20','21','22','23','24','25','26','27','28',...
+        '29','30','NorthWest')
+title('On-Axis Magnetic field for different numbers of dipoles in an EM')
+xlabel('x [m]')
+ylabel('Bx [T]')
+hold off
+
+
+return;
+
+mAct = [m_EM_large m_EM_large m_EM_large m_EM_large 0 0 0 0];
 r_l = d_EM_large/2;
 r_s = d_EM_small/2;
-alpha = asin(sqrt(2)*r_s*sin(pi/4)/(r_l+r_s));
+alpha = asin(sqrt(2)*r_l*sin(pi/4)/(r_l+r_s));
 beta = pi-pi/4-alpha;
 x_sqr = (r_l+r_s)*sin(beta)/sin(pi/4);
 s = x_sqr/sqrt(2);
-mAct_sph = [  0  0  0  0  0  0  0  0;    %Azimuth [rad]
-              0  0  0  0  0  0  0  0];    %Inclination [rad]
-pAct_cartesion = [    s     -s     -s      s    sqrt(2)*r_s   0    -sqrt(2)*r_s   0  ;  % X Position
-                      s      s     -s     -s           0      sqrt(2)*r_s   0     -sqrt(2)*r_s ;	% Y Position
-                   -0.12  -0.12  -0.12  -0.12  -0.12 -0.12 -0.12 -0.12 ];% Z Position
+mAct_sph = [  0     pi/2  pi   3*pi/2 0  0  0  0;    %Azimuth [rad]
+             -pi/6 -pi/6 -pi/6 -pi/6  0  0  0  0];    %Inclination [rad]
+pAct_cartesion = [ sqrt(2)*r_l        0    -sqrt(2)*r_l          0     s    -s    -s     s  ;  % X Position
+                          0    sqrt(2)*r_l         0     -sqrt(2)*r_l  s     s    -s    -s  ;	% Y Position
+                       -0.15       -0.15        -0.15         -0.15  -0.12 -0.12 -0.12 -0.12 ];% Z Position
 
 %% ~~~~~~~~~~ SIMULATION: EVALUATE SINGULAR VALUES ~~~~~~~~~~ %%              
 nAct = size(pAct_cartesion,2);
@@ -181,5 +287,5 @@ for j=1:size(pTool,2)
     disp(printout);
 end
 
-plotEM(r, large_EM, small_EM, rad2deg(mAct_sph), pAct_cartesion, sum(singularValues), figureNum);
-figureNum = figureNum + 1;
+
+
