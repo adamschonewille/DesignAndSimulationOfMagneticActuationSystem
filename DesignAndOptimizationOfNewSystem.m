@@ -86,15 +86,65 @@ choice = menu("Run Simulation for: Finding Position of Actuators?",'Yes','No');
  % 1 is Yes (option 1)
  % 2 is No (option 2)
 if (choice == 1)
+    choice2 = menu("Use MATLAB functions?",'Yes','No');
+    % 0 is Exit
+    % 1 is Yes (option 1)
+    % 2 is No (option 2)
+    if (choice2 == 1)
+        numActuators = 8;
+%         quadrants = [5 6 7 8];
+        [mAct_sph_sim, pAct_cartesion_sim] = findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum); 
+        % for extra random starting points run the simulations again
+        figureNum = figureNum + 1;
+
+%         findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum);
+%         figureNum = figureNum + 1;
+%         findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum);  
+%         figureNum = figureNum + 1;
+    else
+        numActuators = 1;
+        [mAct_sph_sim, pAct_cartesion_sim] = optimizeEMPositions(numActuators, large_EM, small_EM, r, figureNum)
+        z_hat = [0; 0; 1];
+        Rzy = rotz(mAct_sph_sim(1,1))*roty(mAct_sph_sim(2,1))*z_hat;
+        m_mag = large_EM(1);
+        O = [0;0;0];
+        B = dipoleField( (O-pAct_cartesion_sim(:,1)), m_mag*Rzy)
+        
+    end
+end % Any other option just skips/does nothing
+
+%% ~~~~~~~~~~ ~~~~~~~~~~ POSITION OF ACTUATORS SIMULATION ~~~~~~~~~~ ~~~~~~~~~~ %% 
+choice = menu("Run Simulation for: Monte Carlo Simulation for Position of Actuators?",'Yes','No');
+ % 0 is Exit
+ % 1 is Yes (option 1)
+ % 2 is No (option 2)
+if (choice == 1)
     numActuators = 8;
     quadrants = [5 6 7 8];
-    findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum); 
+%     MonteCarloEMPositions(numActuators, large_EM, small_EM, r, figureNum);
+    tic
+    [mAct_sph_sim, pAct_cartesion_sim] = MonteCarloEMPositions(numActuators, large_EM, large_EM, r, figureNum);
+    toc
     figureNum = figureNum + 1;
-    findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum);
-    figureNum = figureNum + 1;
-    findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum);  
-    figureNum = figureNum + 1;
+    
+    fittingParameters = [mAct_sph_sim; pAct_cartesion_sim];  
+    Constants = [r; large_EM; large_EM];
+    fval = calcFitness(fittingParameters,Constants);
+    plotEM(r, large_EM, large_EM, rad2deg(mAct_sph_sim), pAct_cartesion_sim, fval, figureNum);
+    hold on
+    [x y] = meshgrid(-0.75:0.1:0.75); % Generate x and y data
+    z = -r*ones(size(x, 1)); % Generate z data
+    surf(x, y, z,'FaceAlpha',0.25) % Plot the surface
+    hold off
+    
+    
+%     MonteCarloEMPositions(numActuators, large_EM, large_EM, r, figureNum);
+%     figureNum = figureNum + 1;
+%     MonteCarloEMPositions(numActuators, large_EM, large_EM, r, figureNum);
+%     figureNum = figureNum + 1;
+%     MonteCarloEMPositions(numActuators, large_EM, large_EM, r, figureNum);
 end % Any other option just skips/does nothing
+
 % checkCylinderCollision(centerPoint0, W0, r0, h0, centerPoint1, W1, r1, h1)
 
 %checkCylinderCollision([1 1 1], [0 0 1], 0.07, 0.5, [-1 -1 -1], [0 0 1], 0.07, 0.5)

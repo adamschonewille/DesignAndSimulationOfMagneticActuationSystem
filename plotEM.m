@@ -2,12 +2,12 @@ function [] = plotEM(nomDist, large_EM, small_EM, mAct_sph, pAct, fval, figureNu
 
 % Define large cylinder for plotting
 [X_l,Y_l,Z_l] = cylinder();
-Z_l = -Z_l.*large_EM(3);
+Z_l = -Z_l.*large_EM(3) + large_EM(3)/2;
 X_l = X_l.*large_EM(2)/2;
 Y_l = Y_l.*large_EM(2)/2;
 % Define small cylinder for plotting
 [X_s,Y_s,Z_s] = cylinder();
-Z_s = -Z_s.*small_EM(3);
+Z_s = -Z_s.*small_EM(3) + small_EM(3)/2;
 X_s = X_s.*small_EM(2)/2;
 Y_s = Y_s.*small_EM(2)/2;
 

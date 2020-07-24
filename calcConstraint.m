@@ -4,6 +4,18 @@ function [c, ceq] = calcConstraint(fittingParameters, Constants)
 % c(x) <= 0 for all entries of c.
 %
 % ceq = ...   % Compute nonlinear equalities at x.
+
+
+% For Genetic Algorithm:
+% input matrix is changed into a vector mx1
+
+isVec = false;
+if ( (size(fittingParameters,1) == 1) || (size(fittingParameters,2) == 1) )
+    % if the input is a vector then reorganize into a matrix.
+    fittingParameters = reshape(fittingParameters,8,[])' ;
+    isVec = true;
+end
+
 minDist = Constants(1);
 d_large = Constants(3);
 d_small = Constants(6);
@@ -17,12 +29,16 @@ RzyAct = zeros(3,nAct);
 for i=1:nAct 
     RzyAct(:,i) = [ cosd(mAct_sph(1,i))*sind(mAct_sph(2,i));
                     sind(mAct_sph(1,i))*sind(mAct_sph(2,i));
-                   -cosd(mAct_sph(2,i)) ];        
+                    cosd(mAct_sph(2,i)) ];  %-cosd(mAct_sph(2,i)) ];       
 end
 W = RzyAct;
 EM_size = [l_large/2 l_large/2 l_large/2 l_large/2 l_small/2 l_small/2 l_small/2 l_small/2];
 EM_size = [EM_size;EM_size;EM_size];
-Cn = fittingParameters(3:5,:) - EM_size.*W;
+% This is to shift the location of the dipole for a dipole located at the 
+% face of the EM instead of the center
+% Cn = fittingParameters(3:5,:) - EM_size.*W; 
+
+Cn = fittingParameters(3:5,:);
 
 c = zeros(1,nAct);
 ceq = c;
@@ -37,7 +53,8 @@ for i = 1:length(c)
     else
         c(i) = minDist + fittingParameters(5,i) + d_small/2 * sin(fittingParameters(2,i));
     end
-        if (i <= length(c)-1)
+    
+    if (i <= length(c)-1)
         for j = i+1:length(c)
             % Only check if the faces of EM are spaced far enough apart:
 %             if (i <= 4) && (j <= 4)
@@ -50,7 +67,7 @@ for i = 1:length(c)
 %                 extra_c(count) = d_small - norm(fittingParameters(3:5,i)-fittingParameters(3:5,j) );
 %                 count = count+1;
 %             end
-            % Check is EMs collide with one another
+            % Check if EMs collide with one another
             if (i <= 4) && (j <= 4)
                 extra_c(count) = checkCylinderCollision(Cn(:,i), W(:,i), d_large/2, l_large, ...
                                                         Cn(:,j), W(:,j), d_large/2, l_large);
@@ -67,9 +84,21 @@ for i = 1:length(c)
         end
     end
 end
-c = [c, extra_c];
 
-ceq = zeros(size(c));
+% original constraint function
+% c = [c, 10*extra_c];
+% ceq = zeros(size(c));
+
+% new constraint function, the collisions must be = 0 (false)
+
+ceq = 10*extra_c;
+% zeros(size(c));
+c = [c, zeros(1,size(ceq,2)-size(c,2))];
+
+if (isVec)
+    c = reshape(c',1,[]);
+    ceq = reshape(ceq',1,[]);    
+end
 
 % For ceq, ensure that the values are the same magnitude
 

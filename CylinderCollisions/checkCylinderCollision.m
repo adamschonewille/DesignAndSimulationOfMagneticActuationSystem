@@ -2,10 +2,12 @@ function [cond] = checkCylinderCollision(centerPoint0, W0, r0, h0, ...
                                          centerPoint1, W1, r1, h1)
 %checkCylinderCollision
 %% Parameters:
-
-
+% centerPoint0 - [x y z] center of mass of a uniformly distributed cylinder
+% W0 - unit vector direction of the cylinder axis of rotational symmetry
+% r0 - cylinder radius
+% h0 - overall length of the cylinder
 %% Output:
-
+% cond - ? bool
 
 %% Code:
 
@@ -67,6 +69,5 @@ else
 end
 
 % If none of the functions return false, then cond will still be true.
-
 
 end

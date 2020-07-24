@@ -1,9 +1,9 @@
-function [mAct_sph pAct_sph] = findOptimalEMPositions(numActuators, large_EM, small_EM, nomDist, figureNum, quadrants)
+function [mAct_sph pAct] = findOptimalEMPositions(numActuators, large_EM, small_EM, nomDist, figureNum, quadrants)
 % finds optimum conditions for actuators below nomDist plane
 
 % ___EM = [m_EM_large, d_EM_large, l_EM_large]';
 
-% quadrants:
+% quadrants in 3D:
 % #     x   y   z
 % 1     +   +   +
 % 2     -   +   +
@@ -33,11 +33,13 @@ function [mAct_sph pAct_sph] = findOptimalEMPositions(numActuators, large_EM, sm
 % mAct_sph = rand(2,numActuators);
 % pAct_cartesion = rand(3,numActuators);
 % Randomize the Initial inputs (with scaling):
-mAct_sph = [2*pi*rand(1,numActuators);
-             pi/2*rand(1,numActuators)];
-pAct_cartesion = [rand(1,numActuators)-0.5;
-                  rand(1,numActuators)-0.5;
-                  -(0.5-nomDist)*rand(1,numActuators)-0.15];
+
+% mAct_sph = [2*pi*rand(1,numActuators);
+%              pi/2*rand(1,numActuators)];
+% pAct_cartesion = [rand(1,numActuators)-0.5;
+%                   rand(1,numActuators)-0.5;
+%                   -(0.5-nomDist)*rand(1,numActuators)-0.15];
+
 % Initial User Guess:
 % mAct_sph = [  0   pi/2  pi  3*pi/2  0  0  0  0;    %Azimuth [rad]
 %              pi/6 pi/6 pi/6   pi/6  0  0  0  0];    %Inclination [rad]
@@ -45,12 +47,12 @@ pAct_cartesion = [rand(1,numActuators)-0.5;
 %                     0    -0.15  0     0.15 -0.045  -0.045   0.045   0.045;	% Y Position
 %                    -0.18 -0.18 -0.18 -0.18 -0.15   -0.15   -0.15   -0.15];% Z Position
 % Initial User Guess (all vert):
-% mAct_sph = [ 0  0  0  0  0  0  0  0;     %Azimuth [rad]
-%              0  0  0  0  0  0  0  0];    %Inclination [rad]
-% r_a = large_EM(2)/2 + sqrt( (large_EM(2)/2+small_EM(2)/2)^2 + (large_EM(2)/2)^2 );
-% pAct_cartesion = [  0.0675  0.0675 -0.0675 -0.0675  r_a   0    -r_a   0   ; % X Position
-%                     0.0675 -0.0675 -0.0675  0.0675  0     r_a   0    -r_a ;	% Y Position
-%                    -0.15   -0.15   -0.15   -0.15   -0.15 -0.15 -0.15 -0.15];% Z Position
+mAct_sph = [ 0  0  0  0  0  0  0  0;     %Azimuth [rad]
+             0  0  0  0  0  0  0  0];    %Inclination [rad]
+r_a = large_EM(2)/2 + sqrt( (large_EM(2)/2+small_EM(2)/2)^2 + (large_EM(2)/2)^2 );
+pAct_cartesion = [  0.0675  0.0675 -0.0675 -0.0675  r_a   0    -r_a   0   ; % X Position
+                    0.0675 -0.0675 -0.0675  0.0675  0     r_a   0    -r_a ;	% Y Position
+                   -0.15   -0.15   -0.15   -0.15   -0.15 -0.15 -0.15 -0.15];% Z Position
 
 % Tethered Tool Parameters
 pTool = [0 0 0]'; %tool position [m]
@@ -76,18 +78,36 @@ lb = [   0    0    0    0    0    0    0    0;
       -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5;
       -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5;
       -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5 -0.5];
-ub = [ 2*pi 2*pi 2*pi 2*pi 2*pi 2*pi 2*pi 2*pi;  % 360  360  360  360  360  360  360  360;
-       pi/2 pi/2 pi/2 pi/2 pi/2 pi/2 pi/2 pi/2;  % 90   90   90   90   90   90   90   90;
-       0.5  0.5  0.5  0.5  0.5  0.5  0.5  0.5;
-       0.5  0.5  0.5  0.5  0.5  0.5  0.5  0.5;
-      -nomDist -nomDist -nomDist -nomDist -nomDist -nomDist -nomDist -nomDist];
+% Create the upper bound as close to the patient plane as possible for any
+% EM orientation:
+h_l = sqrt((large_EM(2)/2)^2+(large_EM(3)/2)^2);
+h_s = sqrt((small_EM(2)/2)^2+(small_EM(3)/2)^2);
+ub_z_l = -nomDist - h_l;
+ub_z_s = -nomDist - h_s;
+ub = [ 2*pi   2*pi   2*pi   2*pi   2*pi   2*pi   2*pi   2*pi;  % 360  360  360  360  360  360  360  360;
+       pi/2   pi/2   pi/2   pi/2   pi/2   pi/2   pi/2   pi/2;  % 90   90   90   90   90   90   90   90;
+       0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5;
+       0.5    0.5    0.5    0.5    0.5    0.5    0.5    0.5;
+       ub_z_l ub_z_l ub_z_l ub_z_l ub_z_s ub_z_s ub_z_s ub_z_s];
 % nonlcon = @fun_con;
-[x,fval] = fmincon(fun_opt,fittingParameters,A,b,Aeq,beq,lb,ub,fun_con,options)
+% fmincon with matrix inputs
+% [x,fval] = fmincon(fun_opt,fittingParameters,A,b,Aeq,beq,lb,ub,fun_con,options);
 %https://www.mathworks.com/help/optim/ug/fmincon.html
+% fmincon with vectorized inputs
+[x,fval] = fmincon(fun_opt,reshape(fittingParameters',1,[]),A,b,Aeq,beq,reshape(lb',1,[]),reshape(ub',1,[]),fun_con,options);
+isVec = true;
+
+% [x,fval] = ga(fun_opt,numel(fittingParameters),A,b,Aeq,beq,reshape(lb',1,[]),reshape(ub',1,[]),fun_con); %,options
+
 figureNum = figureNum+1;
+
+if isVec
+    x = reshape(x,8,[])' ;
+end
 
 mAct_sph = x(1:2,:);
 pAct = x(3:5,:);
+
 
 % Define large cylinder for plotting
 [X_l,Y_l,Z_l] = cylinder();
