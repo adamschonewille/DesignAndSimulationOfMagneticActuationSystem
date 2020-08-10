@@ -25,7 +25,11 @@ for l=1:4
     X_mod = [temp_cylinder(1,:);temp_cylinder(4,:)] + pAct(1,l);
     Y_mod = [temp_cylinder(2,:);temp_cylinder(5,:)] + pAct(2,l);
     Z_mod = [temp_cylinder(3,:);temp_cylinder(6,:)] + pAct(3,l);
-  
+    
+    X_mod = real(X_mod);
+    Y_mod = real(Y_mod);
+    Z_mod = real(Z_mod);
+    
     surf(X_mod,Y_mod,Z_mod) 
     hold on
 end
@@ -40,6 +44,11 @@ for l=5:8
     X_mod = [temp_cylinder(1,:);temp_cylinder(4,:)] + pAct(1,l);
     Y_mod = [temp_cylinder(2,:);temp_cylinder(5,:)] + pAct(2,l);
     Z_mod = [temp_cylinder(3,:);temp_cylinder(6,:)] + pAct(3,l);
+    
+    X_mod = real(X_mod);
+    Y_mod = real(Y_mod);
+    Z_mod = real(Z_mod);
+    
     hold on
     surf(X_mod,Y_mod,Z_mod) 
 end

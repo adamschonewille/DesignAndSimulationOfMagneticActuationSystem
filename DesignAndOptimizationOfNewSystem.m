@@ -102,14 +102,14 @@ if (choice == 1)
 %         findOptimalEMPositions(numActuators, large_EM, small_EM, r, figureNum);  
 %         figureNum = figureNum + 1;
     else
-        numActuators = 1;
-        [mAct_sph_sim, pAct_cartesion_sim] = optimizeEMPositions(numActuators, large_EM, small_EM, r, figureNum)
+        numActuators = 8;
+        [mAct_sph_sim, pAct_cartesion_sim] = optimizeEMPositions(numActuators, large_EM, large_EM, r, figureNum)
         z_hat = [0; 0; 1];
         Rzy = rotz(mAct_sph_sim(1,1))*roty(mAct_sph_sim(2,1))*z_hat;
         m_mag = large_EM(1);
         O = [0;0;0];
+        G = evalG(r, large_EM, mAct_sph_sim, pAct_cartesion_sim)
         B = dipoleField( (O-pAct_cartesion_sim(:,1)), m_mag*Rzy)
-        
     end
 end % Any other option just skips/does nothing
 
