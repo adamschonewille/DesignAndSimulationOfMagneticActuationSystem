@@ -26,12 +26,14 @@ m_mag = EM_dim(1);
 D = EM_dim(2);
 L = EM_dim(3);
 theta = atan(D/L);
+B_dip = zeros(3,numActuators);
 % Calc B and Z at the same time because both go through n loops.
 for i = 1:numActuators
     % find EM magnetic moment axis using the orientation angles 
     Rzy = rotz(mAct_sph(1,i))*roty(mAct_sph(2,i))*z_hat; 
     % Calc magnetic field and add to previous magnetic field contributions
     B(:,1) = B(:,1) + dipoleField( ( O - (pAct_cartesion(:,i)) ), m_mag*Rzy);
+    B_dip(:,i) = dipoleField( ( O - (pAct_cartesion(:,i)) ), m_mag*Rzy);
     
     % Calc the z height constraint.   
     phi = mod( abs(mAct_sph(2,i)), pi/2 );
@@ -58,6 +60,30 @@ Bmax = numActuators * norm( dipoleField([d;0;0],[m_mag;0;0]) );
 B(3,1) = 0.2*Bmax/B(3,1);
 B(1:2,1) = B(1:2,1)/Bmax;
 
+B_desx = [1 0 0]';
+B_desy = [0 1 0]';
+B_desz = [0 0 1]';
+B_dip_inv = pinv(B_dip);
+I_x = B_dip_inv * B_desx;
+I_y = B_dip_inv * B_desy;
+I_z = B_dip_inv * B_desz;
+% Find absolute maximum of I to find the limiting current
+I_xMax = max( abs(I_x) );
+I_yMax = max( abs(I_y) );
+I_zMax = max( abs(I_z) );
+% these next steps are unecessary as the value of the field will just be 1
+% divided by the max current.
+% I = I_x/I_xMax;
+% B = B_dip*I;
+
+B = B_desx/I_xMax + B_desy/I_yMax + B_desz/I_zMax
+% B now contains the max field able to be produced by these actuators. In
+% order to maximize the field, G should be equal to 1/B since we are trying
+% to set G=0 this will maximize B. Scaling is also needed to ensure the
+% optimzation converges at a reasonable rate.
+B = 0.001 * 1./B;
+B = 2*B;
+% B = [B; 1-0.5*B(1)/B(3); 1-B(1)/B(2)];
 
 % Z = 1./Z.^2;
 
@@ -86,7 +112,7 @@ end
 % G = [B; Z; V];
 
 % Take the inverse of the distance and scale appropriately
-sigma = 0.0001;
+sigma = 0.00001;
 DV = sigma./DV;
 
 G = [B; Z; DV];
