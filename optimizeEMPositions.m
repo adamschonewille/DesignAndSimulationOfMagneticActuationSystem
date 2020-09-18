@@ -44,6 +44,8 @@ lengthVec = large_EM(3)*ones(1,numActuators);
 % mAct_sph = rand(2,numActuators);
 % pAct_cartesion = rand(3,numActuators);
 
+rand('state',sum(100*clock))
+
 % % Randomize the Initial inputs (with scaling):
 mAct_sph = [2*pi*rand(1,numActuators);
              pi/2*rand(1,numActuators)];
@@ -107,12 +109,42 @@ end
 % Initial User Guess: Based off previous simulation
 
 
-% % Initial User Guess:
+% % % Initial User Guess:
 % mAct_sph = [  0   pi/2  pi  3*pi/2  0  0  0  0;    %Azimuth [rad]
 %              pi/6 pi/6 pi/6   pi/6  0  0  0  0];    %Inclination [rad]
 % pAct_cartesion = [ -0.25  0     0.25  0    -0.135   0.135   0.135  -0.135;  % X Position
 %                     0    -0.25  0     0.25 -0.135  -0.135   0.135   0.135;	% Y Position
 %                    -0.32 -0.32 -0.32 -0.32 -0.32   -0.32   -0.32   -0.32];% Z Position
+
+% Initial User Guess: Spaced out and vertical
+mAct_sph = [  0  0  0  0  0  0  0  0;    %Azimuth [rad]
+              0  0  0  0  0  0  0  0];    %Inclination [rad]
+pAct_cartesion = [ -0.5   0     0.5   0    -0.27   0.27   0.27  -0.27;  % X Position
+                    0    -0.5   0     0.5  -0.27  -0.27   0.27   0.27;	% Y Position
+                   -0.32 -0.32 -0.32 -0.32 -0.32  -0.32  -0.32  -0.32];% Z Position
+
+% % Initial User Guess: Spaced out, vertical, and shifted in X (off-center)
+% mAct_sph = [  0  0  0  0  0  0  0  0;    %Azimuth [rad]
+%               0  0  0  0  0  0  0  0]    %Inclination [rad]
+% x_s = 0.01;
+% pAct_cartesion = [ -0.5+x_s   0+x_s     0.5+x_s   0+x_s    -0.27+x_s   0.27+x_s   0.27+x_s  -0.27+x_s;  % X Position
+%                     0    -0.5   0     0.5  -0.27  -0.27   0.27   0.27;	% Y Position
+%                    -0.32 -0.32 -0.32 -0.32 -0.32  -0.32  -0.32  -0.32]% Z Position
+
+% % Initial User Guess: Spaced out and horizontal
+% mAct_sph = [  0     pi/2  pi   -pi/2  -3*pi/4  -pi/4  pi/4 3*pi/4;    %Azimuth [rad]
+%               pi/2  pi/2  pi/2  pi/2     pi/2   pi/2  pi/2   pi/2];    %Inclination [rad]
+% pAct_cartesion = [ 0.5   0     -0.5   0    -0.27   0.27   0.27  -0.27;  % X Position
+%                     0    0.5   0     -0.5  -0.27  -0.27   0.27   0.27;	% Y Position
+%                    -0.135 -0.135 -0.135 -0.135 -0.135  -0.135  -0.135  -0.135];% Z Position
+            
+% % Initial User Guess: Spaced out and at 45 deg inclination
+% mAct_sph = [  0      pi/2   pi    -pi/2   -3*pi/4   -pi/4   pi/4  3*pi/4;    %Azimuth [rad]
+%              -pi/4  -pi/4  -pi/4  -pi/4     -pi/4   -pi/4  -pi/4   -pi/4];    %Inclination [rad]
+% h = nomDist + large_EM(3)/(2*sqrt(2)) + large_EM(2)/(2*sqrt(2)); % equals 0.2950
+% pAct_cartesion = [ 0.5   0     -0.5   0    -0.27   0.27   0.27  -0.27;  % X Position
+%                    0     0.5   0     -0.5  -0.27  -0.27   0.27   0.27;	% Y Position
+%                   -h    -h    -h     -h    -h     -h     -h     -h];% Z Position
 
 % Initial User Guess (all vert):
 % mAct_sph = [ 0  0  0  0  0  0  0  0;     %Azimuth [rad]
@@ -122,12 +154,29 @@ end
 %                     0.0675 -0.0675 -0.0675  0.0675  0     r_a   0    -r_a ;	% Y Position
 %                    -0.15   -0.15   -0.15   -0.15   -0.15 -0.15 -0.15 -0.15];% Z Position
 
+
 % mAct_sph = [1.5992    2.9278    0.2347    0.8455    0.5037    4.9304    1.1261    2.0435;
 %             0.4129    0.1345    1.4812    0.3615    0.6569    0.0537    1.0536    0.1670];
 % 
 % pAct_cartesion =  [-0.1081    0.1162   -0.3742    0.0667   -0.1696    0.0158    0.0977   -0.3242;
 %                    -0.1143   -0.1218   -0.3825    0.0805    0.0628   -0.2640    0.3833   -0.1220;
 %                    -0.3119   -0.3074   -0.2033   -0.3118   -0.3029   -0.3036   -0.2676   -0.3085];
+
+
+%Plot initial config
+G = evalG(nomDist, large_EM, mAct_sph, pAct_cartesion);
+F = 1/2 * G'*G;
+plotEM(nomDist, large_EM, large_EM, rad2deg(mAct_sph), pAct_cartesion, F, 20); % figure number arbitrarilly set to 20
+hold on
+title("Initial config with a fitness of: " + num2str(F))
+[x0 y0] = meshgrid(-0.75:0.1:0.75); % Generate x and y data
+z0 = -nomDist*ones(size(x0, 1)); % Generate z data
+surf(x0, y0, z0,'FaceAlpha',0.25) % Plot the surface
+xlim([-0.75,0.75])
+ylim([-0.75,0.75])
+zlim([-0.5,0.25])
+view([ 37.5, 30 ])
+hold off
 
 
 %% Setup Parameters
@@ -230,7 +279,7 @@ M_dels = zeros(lengthB,5,numActuators);
 x_params = [ reshape(pAct_cartesion',1,[]), reshape(mAct_sph',1,[]) ]';
 % set arbitrary set size
 mu = 0.001; 
-
+% mu = 0.0001; 
 % mu = [dp*ones(numActuators*3,1); dtheta*ones(numActuators*2,1)];
 
 EM_dim = large_EM;
@@ -310,7 +359,7 @@ for i = 1:numSteps
     hold off
 
     figure(10)
-    plot(G, 'o-k')
+    plot(real(G), 'o-k')
     hold on
     set(gcf, 'Position',  [0, 450, 450, 300])
     title('Evaluation of G')
